@@ -9,14 +9,14 @@ namespace Nancy.GlobalExceptionHandling
 {
     public static partial class GlobalExceptionHandler
     {
-        public static ErrorBoks ErrorBox { get; private set; }
+        public static ExceptionHandlerBox ExceptionHandlers { get; private set; }
         static GlobalExceptionHandler()
         {
-            ErrorBox = new ErrorBoks();
+            ExceptionHandlers = new ExceptionHandlerBox();
         }
         public static Response Handle(NancyContext context, Exception exception)
         {
-            var func = ErrorBox.Get(typeof (Exception));
+            var func = ExceptionHandlers.GetHandler(typeof (Exception));
 
             return func(context.Request);
         }

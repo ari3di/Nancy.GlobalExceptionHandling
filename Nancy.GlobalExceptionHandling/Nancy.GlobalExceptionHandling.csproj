@@ -45,7 +45,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ErrorBox.cs" />
-    <Compile Include="ErrorResult.cs" />
     <Compile Include="GlobalExceptionHandler.cs" />
     <Compile Include="NotHandledException.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
