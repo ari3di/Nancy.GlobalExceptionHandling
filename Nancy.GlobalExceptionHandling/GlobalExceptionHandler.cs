@@ -1,24 +1,19 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Nancy.GlobalExceptionHandling
 {
-    public partial class GlobalExceptionHandler
+    public static class GlobalExceptionHandler
     {
-        public ExceptionHandlerBox Handlers { get; private set; }
-        public GlobalExceptionHandler()
+        public static ExceptionHandlerBox Handlers { get; private set; }
+        static GlobalExceptionHandler()
         {
             Handlers = new ExceptionHandlerBox();
         }
-        public Response Handle(NancyContext context, Exception exception)
+        public static Response Handle(NancyContext context, Exception exception)
         {
-            var func = Handlers.Get(typeof (Exception));
+            var handler = Handlers.Get(typeof (Exception));
 
-            return func(context, exception);
+            return handler(context, exception);
         }
 
     }
