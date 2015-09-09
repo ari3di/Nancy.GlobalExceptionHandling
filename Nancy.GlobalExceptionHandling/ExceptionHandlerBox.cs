@@ -6,7 +6,7 @@ using Nancy.Responses;
 
 namespace Nancy.GlobalExceptionHandling
 {
-    public static partial class GlobalExceptionHandler
+    public partial class GlobalExceptionHandler
     {
         /// <summary>
         /// A wrapper around IDictionary<Type, Func<Request, Response>>
@@ -15,7 +15,7 @@ namespace Nancy.GlobalExceptionHandling
         public class ExceptionHandlerBox
         {
             // Each handler would react to a single exception type;
-            private readonly IDictionary<Type, Func<Request, Response>> _exceptionHandlers;
+            private readonly IDictionary<Type, Func<NancyContext, Exception, Response>> _exceptionHandlers;
 
             // A checkpoint for _exceptionHandlers dictionary, so it can only be set once
             private bool _handlersSet = false;  
@@ -25,7 +25,7 @@ namespace Nancy.GlobalExceptionHandling
             /// Fields for Exceptions not handled by the handlers
             /// </summary>
             private readonly Type _notHandledExceptionType = typeof (NotHandledException);
-            private readonly Func<Request, Response> _notHandledExceptionHandler;
+            private readonly Func<NancyContext, Exception, Response> _notHandledExceptionHandler;
 
             // A checkpoint for NotHandledException handler, so it can be overriden only once
             private bool _notHandledExceptionHandlerSet = false;
@@ -33,15 +33,15 @@ namespace Nancy.GlobalExceptionHandling
 
             public ExceptionHandlerBox()
             {
-                _notHandledExceptionHandler = (Request) => new NegotiatedResponse("Something went wrong")
+                _notHandledExceptionHandler = (ctx, ex) => new NegotiatedResponse("Something went wrong")
                     .WithStatusCode(HttpStatusCode.InternalServerError);
 
-                _exceptionHandlers = new ConcurrentDictionary<Type, Func<Request, Response>>();
+                _exceptionHandlers = new ConcurrentDictionary<Type, Func<NancyContext, Exception, Response>>();
 
                 _exceptionHandlers.Add(_notHandledExceptionType, _notHandledExceptionHandler);
             }
 
-            public void OverrideUnhandledExceptionHandler(Func<Request, Response> handler)
+            public void OverrideUnhandledExceptionHandler(Func<NancyContext, Exception, Response> handler)
             {
                 // Throwing an exception if UnhandledExceptionHandler was overriden before
                 if (_notHandledExceptionHandlerSet)
@@ -53,10 +53,11 @@ namespace Nancy.GlobalExceptionHandling
                 {
                     _exceptionHandlers[_notHandledExceptionType] = handler;
                 }
+
                 _notHandledExceptionHandlerSet = true; // Saving the checkpoint
             }
 
-            public void SetExceptionHandlers(IDictionary<Type, Func<Request, Response>> exceptionHandlers)
+            public void Set(IDictionary<Type, Func<NancyContext, Exception, Response>> exceptionHandlers)
             {
                 // Throwing an exception if Handlers were set before
                 if (_handlersSet)
@@ -69,16 +70,16 @@ namespace Nancy.GlobalExceptionHandling
                 if (exceptionHandlers.Keys.Any(type => type == typeof (NotHandledException)))
                 {
                     throw new Exception("NotHandledException handler should only be overriden with the method" +
-                                        "GlobalExceptionHandler.ExceptionHandlers.OverrideUnhandledExceptionHandler");
+                                        " GlobalExceptionHandler.Handlers.OverrideUnhandledExceptionHandler");
                 }
 
                 foreach (var exceptionHandler in exceptionHandlers)
                 {
                     // Checking if the inputed Type extends the Extension Class
-                    var exception = exceptionHandler.Key;
-                    if (!exception.IsAssignableFrom(typeof(Exception)))
+                    var type = exceptionHandler.Key;
+                    if (!typeof(Exception).IsAssignableFrom(type))
                     {
-                        throw new Exception($"{exception.GetType().Name} does not extend Exception");
+                        throw new Exception($"{type.Name} does not extend Exception");
                     }
 
                     _exceptionHandlers.Add(exceptionHandler);
@@ -94,7 +95,7 @@ namespace Nancy.GlobalExceptionHandling
             /// </summary>
             /// <param name="type"></param>
             /// <returns></returns>
-            public Func<Request, Response> GetHandler(Type type)
+            public Func<NancyContext, Exception, Response> Get(Type type)
             {
                 // Checking if the requested type extends Exception
                 // Unnecessary and reduces performance
@@ -104,7 +105,7 @@ namespace Nancy.GlobalExceptionHandling
                 }*/
 
                 // Finding the handler for thrown exception
-                Func<Request,Response> handler;
+                Func<NancyContext, Exception, Response> handler;
                 if (_exceptionHandlers.TryGetValue(type, out handler))
                 {
                     return _exceptionHandlers[type];

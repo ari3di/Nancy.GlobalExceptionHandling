@@ -7,18 +7,18 @@ using System.Threading.Tasks;
 
 namespace Nancy.GlobalExceptionHandling
 {
-    public static partial class GlobalExceptionHandler
+    public partial class GlobalExceptionHandler
     {
-        public static ExceptionHandlerBox ExceptionHandlers { get; private set; }
-        static GlobalExceptionHandler()
+        public ExceptionHandlerBox Handlers { get; private set; }
+        public GlobalExceptionHandler()
         {
-            ExceptionHandlers = new ExceptionHandlerBox();
+            Handlers = new ExceptionHandlerBox();
         }
-        public static Response Handle(NancyContext context, Exception exception)
+        public Response Handle(NancyContext context, Exception exception)
         {
-            var func = ExceptionHandlers.GetHandler(typeof (Exception));
+            var func = Handlers.Get(typeof (Exception));
 
-            return func(context.Request);
+            return func(context, exception);
         }
 
     }
